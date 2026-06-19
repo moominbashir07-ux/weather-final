@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root, .theme-dark {
+  --bg-primary: #080d1a;
+  --bg-secondary: #0d1529;
+  --bg-card: #131e38;
+  --border: rgba(34, 211, 238, 0.15);
+  --text-primary: #e2e8f0;
+  --text-muted: #64748b;
+  --accent: #22d3ee;
+  --accent-dim: rgba(34, 211, 238, 0.2);
+}
+
+.theme-midnight {
+  --bg-primary: #020617;
+  --bg-secondary: #0b0f19;
+  --bg-card: #111827;
+  --border: rgba(34, 211, 238, 0.12);
+  --text-primary: #f9fafb;
+  --text-muted: #9ca3af;
+  --accent: #38bdf8;
+  --accent-dim: rgba(56, 189, 248, 0.2);
+}
+
+.theme-light {
+  --bg-primary: #f9fafb;
+  --bg-secondary: #f3f4f6;
+  --bg-card: #ffffff;
+  --border: rgba(15, 23, 42, 0.08);
+  --text-primary: #111827;
+  --text-muted: #6b7280;
+  --accent: #0284c7;
+  --accent-dim: rgba(2, 132, 199, 0.2);
+}
+
+.theme-forest {
+  --bg-primary: #021a0f;
+  --bg-secondary: #062416;
+  --bg-card: #0b3420;
+  --border: rgba(16, 185, 129, 0.15);
+  --text-primary: #ecfdf5;
+  --text-muted: #6ee7b7;
+  --accent: #10b981;
+  --accent-dim: rgba(16, 185, 129, 0.2);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: rgba(34, 211, 238, 0.3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(34, 211, 238, 0.6); }
+
+/* Noise texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 999;
+  opacity: 0.4;
+}
+
+/* Glow border utility */
+.glow-border {
+  border: 1px solid var(--border);
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.05), inset 0 0 20px rgba(34, 211, 238, 0.02);
+}
+
+/* AQI gauge animation */
+@keyframes gauge-fill {
+  from { stroke-dashoffset: 283; }
+  to { stroke-dashoffset: var(--gauge-offset); }
+}
+
+.gauge-arc {
+  animation: gauge-fill 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Card hover */
+.card-hover {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 40px rgba(34, 211, 238, 0.1);
+}
+
+/* Stagger animation */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.5s ease forwards;
+}

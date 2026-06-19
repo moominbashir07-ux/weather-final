@@ -1,0 +1,202 @@
+# AQI Predictor – Setup & Run Guide
+
+This project predicts **Air Quality Index (AQI)** using Machine Learning.
+It has two main parts:
+
+* **Backend (Python + FastAPI)** – Handles ML models and API
+* **Frontend (React + Vite)** – User interface for the website
+
+Follow the steps below to run the project locally.
+
+---
+
+# 1. Prerequisites
+
+Before starting, make sure the following are installed on your system:
+
+* Python 3.8 or higher
+* Node.js
+* npm (comes with Node.js)
+
+Check installation with:
+
+```
+python --version
+node -v
+npm -v
+```
+
+---
+
+# 2. Extract the Project
+
+Extract the zip file:
+
+```
+aqi-predictor-final.zip
+```
+
+Then open a terminal inside the extracted folder.
+
+Example structure:
+
+```
+aqi-predictor
+│
+├── backend
+├── frontend
+└── README.md
+```
+
+---
+
+# 3. Start the Backend (Python)
+
+Go to the backend folder:
+
+```
+cd backend
+```
+
+Install required Python packages:
+
+```
+python -m pip install -r requirements.txt
+```
+
+Train the machine learning models (run only once):
+
+```
+python ml_model/train.py
+```
+
+Start the backend API server:
+
+```
+python app.py
+```
+
+If successful, the backend will run at:
+
+```
+http://localhost:8000
+```
+
+API documentation:
+
+```
+http://localhost:8000/docs
+```
+
+⚠️ Keep this terminal running.
+
+---
+
+# 4. Start the Frontend (React)
+
+Open a **new terminal window**.
+
+Go to the frontend folder:
+
+```
+cd frontend
+```
+
+Install frontend dependencies:
+
+```
+npm install
+```
+
+Start the development server:
+
+```
+npm run dev
+```
+
+The website will run at:
+
+```
+http://localhost:3000
+```
+
+---
+
+# 5. Open the Website
+
+Open your browser and visit:
+
+```
+http://localhost:3000
+```
+
+You should now see the **AQI Predictor website**.
+
+---
+
+# 6. Important Notes
+
+Both servers must run simultaneously:
+
+Terminal 1 (Backend)
+
+```
+cd backend
+python app.py
+```
+
+Terminal 2 (Frontend)
+
+```
+cd frontend
+npm run dev
+```
+
+---
+
+# 7. Common Errors & Fixes
+
+## pip not recognized
+
+Use:
+
+```
+python -m pip install -r requirements.txt
+```
+
+---
+
+## FastAPI not found
+
+Install manually:
+
+```
+python -m pip install fastapi uvicorn
+```
+
+---
+
+## ECONNREFUSED error
+
+This means the frontend cannot connect to the backend.
+
+Solution:
+
+* Make sure `python app.py` is running
+* Check that backend is running on port **8000**
+
+---
+
+# 8. Project Workflow
+
+1. Backend loads trained ML model
+2. Frontend sends AQI data request
+3. API predicts AQI using ML
+4. Result is displayed on the website
+
+---
+
+# 9. Author
+
+Developed as a Machine Learning project for AQI prediction.
+

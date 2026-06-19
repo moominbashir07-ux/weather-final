@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: aqi-predictor-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt && python ml_model/train.py
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: LOG_LEVEL
+        value: info
+    healthCheckPath: /health

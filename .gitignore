@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+backend/logs/
+backend/ml_model/best_model.pkl
+backend/ml_model/scaler.pkl
+backend/ml_model/metrics.pkl
+
+# Node / React
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Editor / System
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

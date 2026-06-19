@@ -1,0 +1,154 @@
+{
+  "project_summary": "AQI Predictor is a full-stack machine learning web application that predicts Air Quality Index from 8 environmental parameters (temperature, humidity, wind_speed, co2, pm25, pm10, no2, so2). It trains 3 models (Linear Regression, Random Forest, Decision Tree), auto-selects the best by R² score, and exposes predictions via a FastAPI REST API consumed by a React+Vite frontend with a dark cyberpunk UI. Features include a real-time predictor form with an SVG gauge, 7-day forecast with Recharts visualizations, analytics dashboard, an admin panel for on-demand retraining, and a rich Settings page with 8 sub-sections. The project is designed for deployment with Vercel (frontend) and Render (backend).",
+
+  "tech_stack": {
+    "frontend": "React 18.3.1, React Router DOM 6.23.1, Vite 5.2.11, TailwindCSS 3.4.3, Recharts 2.12.5, Framer Motion 11.2.6, Lucide React 0.383.0, Axios 1.7.2, clsx 2.1.1. Fonts: Syne (display), DM Sans (body), JetBrains Mono (mono).",
+    "backend": "Python 3.10+, FastAPI 0.111.0, Uvicorn 0.29.0, Pydantic 2.7.1, scikit-learn 1.4.2, pandas 2.2.2, numpy 1.26.4, python-multipart 0.0.9, httpx 0.27.0. Single-file app (app.py) with ML training module (train.py).",
+    "database": "None. No database is used. Model artifacts (best_model.pkl, scaler.pkl, metrics.pkl) are persisted to disk via pickle. Historical and forecast data are generated randomly at runtime — they are NOT stored.",
+    "other_tools": "Render (backend deployment via render.yaml), Vercel (frontend deployment via vercel.json), PostCSS + Autoprefixer for CSS processing."
+  },
+
+  "architecture": "Client-server architecture. Frontend (port 3000) communicates with backend (port 8000) via REST API. In development, Vite proxies '/api' requests to 'http://localhost:8000' with path rewriting. In production, Vercel rewrites '/api/:path*' to the Render backend URL. Data flow: User → React UI → Axios → FastAPI → loads pickled model + scaler → StandardScaler.transform → model.predict() → classify AQI into 6 EPA categories → return JSON. Training pipeline: load_dataset → clean_dataset → train_test_split (80/20) → StandardScaler → train 3 models → evaluate R²/MAE/RMSE → save best. React routing: BrowserRouter with 6 routes (/, /predictor, /forecast, /analytics, /admin, /settings). No global state management — each page uses local useState/useEffect. Component hierarchy: App → Navbar + Routes → [Home, Predictor, Forecast, Analytics, Admin, Settings]. API calls centralized in utils/api.js via Axios instance with response interceptor.",
+
+  "features": [
+    { "name": "ML-Powered AQI Prediction", "description": "POST /predict accepts 8 params, scales with StandardScaler, predicts via best model, returns AQI value, EPA category, color, health message, model name, confidence.", "working": true },
+    { "name": "Interactive Predictor Form", "description": "8 ParamInput components (range+number), 3 presets (clean/moderate/polluted), animated SVG gauge, health advisory tips, stat cards.", "working": true },
+    { "name": "7-Day Forecast", "description": "GET /forecast with AreaChart, day-by-day cards, PM2.5 BarChart, summary cards. User selects 3/7/14 days.", "working": false },
+    { "name": "Analytics Dashboard", "description": "Historical AQI AreaChart, pollution trends LineChart, feature importance BarChart, model comparison, predicted vs actual ScatterChart, AQI distribution histogram.", "working": false },
+    { "name": "Admin Panel / Model Retraining", "description": "System status, model metrics, retrain button (POST /train), training console log, feature importance bars. NO authentication.", "working": true },
+    { "name": "Settings Page", "description": "8 sections (General, Appearance, Notifications, Thresholds, Data/API, ML Model, Profile, About) with toggles, selects, sliders, color picker, API keys. Nothing persists.", "working": false },
+    { "name": "SVG AQI Gauge", "description": "Semicircle gauge with multi-color gradient arc, animated needle, tick marks, scale labels (0-500), CSS transitions.", "working": true },
+    { "name": "Dark Cyberpunk Theme", "description": "CSS custom properties for dark navy backgrounds, cyan accent, animated gradient orbs, noise texture overlay, glassmorphic cards, glow borders, custom scrollbar.", "working": true },
+    { "name": "Responsive Navigation", "description": "Fixed navbar with blur backdrop, desktop nav links, mobile horizontal scroll nav, hardcoded API status indicator.", "working": true },
+    { "name": "Health Advisory System", "description": "Maps AQI categories to 3 health tips each, displays backend health_message, includes activity recommendations.", "working": true }
+  ],
+
+  "ui_ux_issues": [
+    { "issue": "Noise texture overlay z-index:999 may interfere with future modals/tooltips", "cause": "body::before in index.css line 46 has z-index:999. pointer-events:none is set but z-index is too high.", "fix": "Reduce z-index to 1." },
+    { "issue": "Admin and Settings nav links share same Lucide Settings icon", "cause": "Navbar.jsx imports Settings once, uses for both (lines 10-11).", "fix": "Use Shield or Lock icon for Admin, keep Settings for Settings." },
+    { "issue": "Settings page 'Saved' toast triggers on ANY click, not just actual changes", "cause": "Settings.jsx line 368: root div has onClick={triggerSave}.", "fix": "Remove onClick from root div; trigger save only from actual setting change handlers." },
+    { "issue": "Forecast summary cards (3-col grid) not responsive on mobile", "cause": "Forecast.jsx line 93: grid-cols-3 with no responsive breakpoint.", "fix": "Change to 'grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8'." },
+    { "issue": "Mobile nav causes double-height header pushing content down", "cause": "Mobile nav div below main nav adds height not accounted for in page pt-24 padding.", "fix": "Use hamburger menu or increase responsive top padding." },
+    { "issue": "Forecast day cards overflow horizontally on narrow screens", "cause": "Forecast.jsx line 165: min-w-[160px] on right section.", "fix": "Stack vertically on mobile using flex-col sm:flex-row." },
+    { "issue": "Settings sidebar doesn't collapse on mobile", "cause": "Fixed aside w-52 with no responsive breakpoint.", "fix": "Make sidebar horizontal on mobile or add collapsible drawer." },
+    { "issue": "'API Live' indicator always shows green regardless of actual connectivity", "cause": "Navbar.jsx lines 60-63: hardcoded green dot, no /health polling.", "fix": "Add useEffect polling /health to toggle indicator." },
+    { "issue": "No skeleton/shimmer loading states for chart areas", "cause": "Only spinning loaders present, no skeleton placeholders.", "fix": "Add skeleton placeholders or shimmer animations." }
+  ],
+
+  "bugs": [
+    { "bug": "React Rules of Hooks violation — useState inside .map() in Settings.jsx", "cause": "AQIThresholds lines 202-211 and MLModel lines 277-288 call useState(def) inside .map() callbacks. This violates React Rules of Hooks and will cause crashes.", "fix": "Extract slider rows into separate components (SliderRow) that manage own state." },
+    { "bug": "Historical AQI data (GET /aqi-history) returns random data every request", "cause": "app.py lines 182-202: random.uniform() with no fixed seed, no persistence.", "fix": "Seed random deterministically or implement real data storage." },
+    { "bug": "Forecast endpoint uses random data, not ML predictions", "cause": "app.py lines 204-229: random.uniform() generates AQI; model.predict() is never called.", "fix": "Generate forecast by running model.predict() on varied input parameters." },
+    { "bug": "Deprecated @app.on_event('startup') in FastAPI", "cause": "app.py line 124: deprecated since FastAPI 0.93.", "fix": "Replace with lifespan context manager." },
+    { "bug": "vercel.json points to placeholder URL 'https://your-backend.onrender.com'", "cause": "vercel.json line 3: never updated with real URL.", "fix": "Replace with actual backend URL." },
+    { "bug": "Stray '{backend' directory with empty nested structure at project root", "cause": "Accidental shell command with unescaped braces created garbage directory.", "fix": "Delete the entire '{backend' directory." },
+    { "bug": "Orphaned Settings.html (675 lines) — dead code not used by React", "cause": "HTML prototype never deleted after conversion to Settings.jsx.", "fix": "Delete Settings.html." },
+    { "bug": "POST /train has no authentication — public retraining vulnerability", "cause": "app.py line 166: no auth middleware or API key check.", "fix": "Add X-API-Key header authentication or rate limiting." },
+    { "bug": "Forecast useEffect has missing dependency warning", "cause": "Forecast.jsx line 46: load function recreated on every render.", "fix": "Wrap load in useCallback or inline fetch logic in useEffect." },
+    { "bug": "AQIGauge generates new random gradient ID on every render", "cause": "AQIGauge.jsx line 16: Math.random() called outside useMemo.", "fix": "Wrap in useMemo(() => ..., []) for stable ID." },
+    { "bug": "Frontend co2 slider max (2000) mismatches backend validation max (5000)", "cause": "aqi.js line 33 max:2000 vs app.py line 57 le=5000.", "fix": "Align max values between frontend and backend." }
+  ],
+
+  "performance_issues": [
+    { "issue": "Noise texture SVG filter as full-viewport pseudo-element", "fix": "Convert to tiled PNG/WebP or remove." },
+    { "issue": "Analytics refetches metrics on every days change (metrics are day-independent)", "fix": "Fetch metrics once on mount, only refetch history on days change." },
+    { "issue": "No code splitting — all 6 pages bundled together", "fix": "Use React.lazy() + Suspense for route-level code splitting." },
+    { "issue": "Google Fonts loaded synchronously blocking render", "fix": "Font display swap already present; consider @font-face with local fallbacks." },
+    { "issue": "Recharts (~250KB) loaded globally but used on only 2 pages", "fix": "Lazy-load Forecast and Analytics pages." },
+    { "issue": "Backend loads model synchronously on startup blocking event loop", "fix": "Use asyncio.to_thread() for async model loading." }
+  ],
+
+  "code_quality": [
+    { "issue": "Extensive inline styles instead of Tailwind classes", "improvement": "Extract repeated inline styles into Tailwind utility classes." },
+    { "issue": "Global mutable dict (_model_cache) with no thread safety", "improvement": "Use asyncio.Lock or FastAPI Depends() for model access." },
+    { "issue": "No TypeScript — plain JS/JSX with no type checking", "improvement": "Migrate to TypeScript or add JSDoc type annotations." },
+    { "issue": "Settings.jsx is 405 lines with 8 inline sub-components", "improvement": "Extract each section into separate files under settings/ directory." },
+    { "issue": "No React error boundary in component tree", "improvement": "Add ErrorBoundary wrapping Routes for crash fallback UI." },
+    { "issue": "No frontend tests (no test files or runner configured)", "improvement": "Add Vitest + React Testing Library." },
+    { "issue": "No backend tests (no pytest files)", "improvement": "Add pytest + httpx.AsyncClient for API testing." },
+    { "issue": "AQI classification duplicated between backend and frontend", "improvement": "Make backend single source of truth; remove redundant frontend classification." },
+    { "issue": "No .gitignore for __pycache__, .env, node_modules, .pkl", "improvement": "Add comprehensive .gitignore." },
+    { "issue": "No package-lock.json integrity verification in CI", "improvement": "Use 'npm ci' instead of 'npm install' in CI." }
+  ],
+
+  "deployment": {
+    "status": "Not production-ready — multiple blocking issues",
+    "issues": [
+      "vercel.json API rewrite points to placeholder URL",
+      "No .env file exists — VITE_API_URL undefined, falls back to '/api'",
+      "No auth on POST /train — public retraining vulnerability",
+      "Pickle files may not survive Render ephemeral filesystem",
+      "CORS allow_origins=['*'] overly permissive",
+      "app.py logging uses relative path for logs/app.log",
+      "No health check interval in render.yaml",
+      "render.yaml build creates logs/ but app.py also creates it at runtime"
+    ],
+    "fixes": [
+      "Update vercel.json with actual Render backend URL",
+      "Create frontend/.env with VITE_API_URL=http://localhost:8000",
+      "Add API key authentication to /train",
+      "Use absolute paths for log files",
+      "Use persistent volume or cloud storage for model artifacts",
+      "Restrict CORS to specific frontend domain",
+      "Add python-dotenv or Pydantic Settings for env vars",
+      "Add Dockerfile for reliable deployment"
+    ]
+  },
+
+  "priority_fixes": {
+    "high": [
+      "FIX React Rules of Hooks violation in Settings.jsx — useState inside .map() will crash (lines 202-211, 277-288)",
+      "FIX vercel.json placeholder backend URL — production deployment broken",
+      "FIX forecast and aqi-history to use deterministic or ML-predicted data instead of random",
+      "ADD authentication to POST /train endpoint",
+      "DELETE stray '{backend' directory"
+    ],
+    "medium": [
+      "FIX Settings page false 'Saved' toast on any click",
+      "FIX Navbar 'API Live' indicator to dynamically check health",
+      "FIX Admin/Settings using same Lucide icon",
+      "ADD .env files for both frontend and backend",
+      "ADD lazy loading / code splitting for Forecast and Analytics",
+      "RESTRICT CORS origins for production",
+      "FIX deprecated @app.on_event('startup')",
+      "FIX AQIGauge random gradient ID on every render",
+      "FIX forecast summary cards mobile responsiveness"
+    ],
+    "low": [
+      "DELETE orphaned Settings.html (675 lines dead code)",
+      "ADD error boundary component",
+      "ADD TypeScript for type safety",
+      "ADD frontend tests with Vitest",
+      "ADD backend tests with pytest",
+      "ADD .gitignore file",
+      "REDUCE inline styles to Tailwind classes",
+      "SPLIT Settings.jsx into sub-module files",
+      "FIX noise texture z-index from 999 to lower value",
+      "ADD structured logging with rotation in backend",
+      "ALIGN frontend co2 slider max (2000) with backend (5000)"
+    ]
+  },
+
+  "next_steps_for_ai": [
+    "1. CRITICAL: Fix Settings.jsx Rules of Hooks — extract useState inside .map() (AQIThresholds lines 202-211, MLModel lines 277-288) into separate SliderRow components.",
+    "2. Delete stray '{backend' directory at aqi-predictor/{backend/.",
+    "3. Delete orphaned Settings.html at frontend/src/pages/Settings.html.",
+    "4. Fix vercel.json: replace placeholder URL with actual backend deployment URL.",
+    "5. Create frontend/.env with VITE_API_URL=http://localhost:8000.",
+    "6. Fix app.py /forecast to use model.predict() on synthetic future parameters instead of random data.",
+    "7. Fix app.py /aqi-history to use deterministic seed (e.g., date-based) for consistent demo data.",
+    "8. Add X-API-Key authentication to POST /train endpoint.",
+    "9. Fix Navbar.jsx: use different icon for Admin vs Settings; add dynamic /health polling.",
+    "10. Fix Settings.jsx: remove onClick={triggerSave} from root div.",
+    "11. Fix AQIGauge.jsx: wrap gradient ID in useMemo for stable ID.",
+    "12. Replace @app.on_event('startup') with FastAPI lifespan context manager.",
+    "13. Add React.lazy() + Suspense for route-level code splitting in App.jsx.",
+    "14. Add responsive breakpoints for Forecast cards and Settings sidebar.",
+    "15. Restrict CORS to specific frontend domain in production.",
+    "16. Add ErrorBoundary wrapping Routes in App.jsx.",
+    "17. Add .gitignore: __pycache__/, *.pkl, .env, node_modules/, dist/, logs/.",
+    "18. Add Dockerfile for backend.",
+    "19. Separate Analytics metrics fetch from history fetch.",
+    "20. Implement localStorage persistence for Settings page user preferences."
+  ]
+}
