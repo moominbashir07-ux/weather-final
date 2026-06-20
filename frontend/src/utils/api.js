@@ -24,4 +24,10 @@ export const getForecast = (days = 7) => api.get(`/forecast?days=${days}`)
 export const getMetrics = () => api.get('/metrics')
 export const getHealth = () => api.get('/health')
 
+// Auth APIs
+export const sendOTP = (email, name) => api.post('/auth/send-otp', { email, name })
+export const signupUser = (name, email, password, otp) => api.post('/auth/signup', { name, email, password, otp })
+export const loginUser = (email, password) => api.post('/auth/login', { email, password })
+
 export default api
+

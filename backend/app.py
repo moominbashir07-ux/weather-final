@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field, field_validator
 # Add ml_model to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "ml_model"))
 from train import train, FEATURES, MODEL_PATH, SCALER_PATH, METRICS_PATH
+from database import init_db, create_user, get_user_by_email, save_otp, verify_otp, verify_password
 
 # ─── Logging ────────────────────────────────────────────────────────────────
 os.makedirs("logs", exist_ok=True)
@@ -38,9 +39,14 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     load_artifacts()
+    try:
+        init_db()
+    except Exception as e:
+        logger.error(f"Failed to initialize SQLite database: {e}")
     logger.info("AQI Predictor API started successfully.")
     yield
     logger.info("AQI Predictor API shutting down.")
+
 
 # ─── App ─────────────────────────────────────────────────────────────────────
 app = FastAPI(
@@ -91,6 +97,22 @@ class TrainResponse(BaseModel):
     metrics: dict
     feature_importance: dict
 
+# ─── Auth Models ─────────────────────────────────────────────────────────────
+class SendOTPRequest(BaseModel):
+    email: str
+    name: Optional[str] = None
+
+class SignupRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+    otp: str
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
 # ─── AQI Helpers ─────────────────────────────────────────────────────────────
 def classify_aqi(aqi: float) -> dict:
     aqi = max(0, aqi)
@@ -137,6 +159,81 @@ def load_artifacts():
 @app.get("/")
 def root():
     return {"message": "AQI Predictor API", "version": "1.0.0", "docs": "/docs"}
+
+# ─── Authentication Routes ───────────────────────────────────────────────────
+@app.post("/auth/send-otp")
+def send_otp_endpoint(data: SendOTPRequest):
+    """Generates an OTP, stores it, logs it, and returns it for development verification."""
+    email = data.email.strip().lower()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Invalid email address.")
+    
+    otp = f"{random.randint(100000, 999999)}"
+    try:
+        save_otp(email, otp)
+    except Exception as e:
+        logger.error(f"Failed to save OTP: {e}")
+        raise HTTPException(status_code=500, detail="Database error occurred.")
+    
+    # Print clearly to the Python terminal log
+    logger.info("\n" + "="*60 + f"\n[OTP VERIFICATION SYSTEM] Email: {email}\nGenerated OTP Code: {otp}\n" + "="*60 + "\n")
+    
+    # We return the code so the developer can see it instantly in the UI during tests!
+    return {"status": "success", "message": "OTP sent successfully to email.", "dev_otp": otp}
+
+@app.post("/auth/signup")
+def signup_endpoint(data: SignupRequest):
+    """Verifies OTP and registers a new user in the SQLite database."""
+    email = data.email.strip().lower()
+    name = data.name.strip()
+    password = data.password
+    otp = data.otp.strip()
+    
+    if not email or not name or not password or not otp:
+        raise HTTPException(status_code=400, detail="All fields are required.")
+    
+    if len(password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters.")
+    
+    if not verify_otp(email, otp):
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP code.")
+    
+    success = create_user(email, password, name)
+    if not success:
+        raise HTTPException(status_code=400, detail="A user with this email already exists.")
+        
+    return {
+        "status": "success",
+        "message": "User registered successfully.",
+        "user": {"email": email, "name": name}
+    }
+
+@app.post("/auth/login")
+def login_endpoint(data: LoginRequest):
+    """Authenticates the user and returns user info."""
+    email = data.email.strip().lower()
+    password = data.password
+    
+    if not email or not password:
+        raise HTTPException(status_code=400, detail="Email and password are required.")
+        
+    user = get_user_by_email(email)
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid email or password.")
+        
+    if not verify_password(password, user["password"]):
+        raise HTTPException(status_code=400, detail="Invalid email or password.")
+        
+    return {
+        "status": "success",
+        "message": "Login successful.",
+        "user": {
+            "id": user["id"],
+            "email": user["email"],
+            "name": user["name"]
+        }
+    }
+
 
 @app.get("/health")
 def health():
